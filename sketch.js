@@ -9,6 +9,7 @@ let heightIncrement = 0;
 let fallingDown = 0; let isFallingDown = false;
 let startHeight;
 let boatLeftRightIncrement = 0; let boatFrontBackIncrement = 0;; boatRotationIncrement = 0.1
+let boatColorIncrementer = 0;
 
 
 function setup() {
@@ -105,7 +106,13 @@ function draw() {
     //summon the ball
     push();
     //fill(255, 255, 255, 1)
-    ambientMaterial(255, 153, 51);
+    //ambientMaterial(255, 153, 51);
+    
+    let r = noise(boatColorIncrementer) * 255;
+    let g = noise(boatColorIncrementer + 10) * 255;
+    let b = noise(boatColorIncrementer + 20) * 255;
+    boatColorIncrementer += 0.01;
+    ambientMaterial(r, g, b);
     //translate(ballX * size - (size * rows/2), sizes[ballX][ballY] - cols - size, ballY * size - (size * cols/2));
     if(floor(ballX) >=0 && floor(ballY) >= 0 && floor(ballX) < cols && floor(ballY) < rows)
     {

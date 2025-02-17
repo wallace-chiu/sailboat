@@ -2,7 +2,6 @@ let sizes = [];
 let cols = 50; rows = cols; let size = cols / 5;
 let xOffset = 0; let yOffset = 0; let zOffset = 0; let offsetIncrement = 0.1;
 let ballX = cols / 2; let ballY = rows / 2;
-let futureBallX; let futureBallY;
 let ballXOffset = 0; let ballYOffset = 0;
 let previousAvgHeight;
 let heightIncrement = 0;
@@ -17,13 +16,12 @@ function setup() {
   rectMode(CENTER);
   angleMode(DEGREES);
   noStroke();
-  //ortho();
   ortho(width / 6, -width / 6, -height / 6, height / 6, 0.00001, 10000);
   boat = loadModel('boat.obj');
-  
 }
 
 function draw() {
+  //setup background
   background(135, 206, 235);
   camera(0, 200, 800);
   orbitControl();
@@ -32,14 +30,15 @@ function draw() {
   rotateX(-45);
   rotateY(45);
 
+  //create giant box below the moving rectangles
   push();
   ambientMaterial(0, 64, 128);
   translate(-size/2, 75, -size/2);
   box(cols * size, 125, rows * size);
   pop();
 
+  //creating moving waves
   xOffset = 0;
-  
   for(let i = 0; i < cols; i++)
     {
       sizes[i] = [];
@@ -58,14 +57,8 @@ function draw() {
         box(size, 100, size);
         pop();
 
-        /*
-        push();
-        fill(255, 255, 255, 100)
-        translate(i * size - (size * rows/2), sizes[i][j] - (50 + size),  j * size - (size * cols/2));
-        sphere(size);
-        pop();
-        
-        
+        //2d plane showing the perlin noise generation
+        /* 
         push(); 
         fill(255, 255, 255)
         rotateY(360);
@@ -82,49 +75,68 @@ function draw() {
       zOffset += 0.0001;
     }
 
-    let avgHeight = isFallingDown ? previousAvgHeight: findLowerBlocks(sizes, floor(ballX), floor(ballY));
+    //doing physics to figure out the movement of the water
+
+    //finding the average height of a block and the surrounding 8 blocks
+      //if the boat is falling down, then the height is dependent on something else
+    let avgHeight = isFallingDown ? previousAvgHeight: findAvgHeight(sizes, floor(ballX), floor(ballY));
+
+    //starting coordinates of the boat
     startHeight = sizes[cols/2][rows/2]
+
+    //i look at this and throw up
+    //for the first instance
     if(previousAvgHeight == null)
     {
       previousAvgHeight = avgHeight;
     }
+    //finds the differences between avg heights in the past vs present
+    //divide by 3 to smooth out the animation
+      //NOTE: not an accurate representation, but good enough
     heightIncrement += ((avgHeight - previousAvgHeight)/3);
-    //futureBallY = futureCoords[1];
-    console.log("avgHeight: " + avgHeight);
 
+    //calculates which direction the boat should be going
     let frontBackDrift = calculateFrontBackDrift(sizes, floor(ballX), floor(ballY));
     let leftRightDrift = calculateLeftRightDrift(sizes, floor(ballX), floor(ballY));
+    //increments the boat movement based on the direction it should go
     ballXOffset += 0.0001 * (frontBackDrift);
     ballYOffset += 0.0001 * (leftRightDrift);
 
+    //calculates what direction the boat should go
     boatFrontBackIncrement += boatRotationIncrement * frontBackDrift;
     boatLeftRightIncrement += boatRotationIncrement * leftRightDrift;
     
-    //console.log(ballX);
-    //futureBallX = futureCoords[0];
-    //futureBallX = floor(map(noise(ballOffset), 0, 1, 0, cols))
-    //summon the ball
+    //creating ship
     push();
-    //fill(255, 255, 255, 1)
-    //ambientMaterial(255, 153, 51);
-    
+
+    //generates the color of the boat 
+    //ambientMaterial(255, 153, 51); //nice orange if you prefer no disco
     let r = noise(boatColorIncrementer) * 255;
     let g = noise(boatColorIncrementer + 10) * 255;
     let b = noise(boatColorIncrementer + 20) * 255;
     boatColorIncrementer += 0.01;
     ambientMaterial(r, g, b);
-    //translate(ballX * size - (size * rows/2), sizes[ballX][ballY] - cols - size, ballY * size - (size * cols/2));
-    if(floor(ballX) >=0 && floor(ballY) >= 0 && floor(ballX) < cols && floor(ballY) < rows)
+
+    //latest change NOT PUSHED YET (!isFalling added to if statement)
+    //if the boat isn't falling down and the boat is within the generated waters, do the normal animation
+    if(!isFallingDown && floor(ballX) >=0 && floor(ballY) >= 0 && floor(ballX) < cols && floor(ballY) < rows)
     {
       translate(ballX * size - (size * rows/2) + ballXOffset, startHeight - cols - size + heightIncrement, ballY * size - (size * cols/2) + ballYOffset);
     }
+    //if the boat is falling down, then we perform the falling animation
     else
     {
+      //set falling down to be true so we always reach the else statement
       isFallingDown = true;
+      //change average height with an increment (it's addition because that's just how this renderer works)
       avgHeight += fallingDown;
+      //if you look closely, it's the same command as the if statement, except the 2nd parameter is adapted to just fall
       translate(ballX * size - (size * rows/2) + ballXOffset, avgHeight, ballY * size - (size * cols/2) + ballYOffset);
+      //increase the gravity as time goes on
       fallingDown += 0.3;
-      console.log("height: " + avgHeight);
+
+      //once the boat falls down enough (arbitary amount), reset everything and put the boat back at the center
+      //this way, we have an infinitely running boat
       if(avgHeight >= 1000)
       {
         //reset the boat physics
@@ -141,40 +153,32 @@ function draw() {
         boatLeftRightIncrement = 0;
       }
     }
-    translate(0, -33, 0);
+    //micro adjustment for height of the boat (make sure it's not floating or under water)
+    translate(0, -32, 0);
+
+    //changes the rotation of the boat to the direction the boat is moving
     rotateX(ballXOffset * 100);
     rotateY(ballYOffset * 100 + boatFrontBackIncrement + boatLeftRightIncrement);
+
+    //the 180 rotation for rotateX and rotateY is to make sure the model is correctly oriented
+    //conditional: falling animation
     rotateY(180 + (isFallingDown ? fallingDown * leftRightDrift * 5 : 0));
     rotateX(180+ (isFallingDown ? fallingDown * frontBackDrift * 5 : 0));
     model(boat, true);
     pop();
-    //do math to do physics to the ball
-    
-    //ballY = floor(map(noise(ballOffset), 0, 1, 0, rows));
 
+    //updates the coordinates of the boat
     ballX += ballXOffset;
     ballY += ballYOffset;
-    previousAvgHeight = avgHeight;
 
-    //NEW IDEA: CALCULATE AVERAGE HEIGHT OF 9 BLOCKS --> HEIGHT OF BOAT
-      //USE BALLOFFSET TO INFLUENCE MOVEMENT (MAY HAVE TO DO LEFT-RIGHT AND FORWARD/BACKWARD OFFSETS)
-      //CALCULATE AVERAGES OF FRONT, BACK, LEFT, RIGHT --> THE LOWEST IS WHERE THE BOAT GOES NEXT (OFFSET CHANGES)
-  /*
-  for(let i = 0; i < cols; i++)
-    {
-      for(let j = 0; j < rows; j++)
-      {
-        fill(0);
-        noStroke();
-        rect(size / 2 + i * size, size / 2 + j * size, sizes[i][j], sizes[i][j]);
-      }
-    }
-      */
+    //updates what the previous height of the boat was
+    previousAvgHeight = avgHeight;
 }
+
+//calculate average of the front and back 3 blocks of a given block (notated as arr[col][row])
+  //if front is greater, return 1, else return -1
 function calculateFrontBackDrift(arr, col, row)
 {
-  //calculate average of the front and back 3
-  //if front is greater, return 1, else return -1
   let backCount = 0;
   let backSum = 0;
   let frontCount = 0;
@@ -197,10 +201,11 @@ function calculateFrontBackDrift(arr, col, row)
   console.log(backAvg + " " + frontAvg);
   return backAvg > frontAvg ? -1 : 1;
 }
+
+//calculate average of the left and right 3 blocks of a given block (notated as arr[col][row])
+  //if front is greater, return 1, else return -1
 function calculateLeftRightDrift(arr, col, row)
 {
-  //calculate average of the front and back 3
-  //if front is greater, return 1, else return -1
   let leftCount = 0;
   let leftSum = 0;
   let rightCount = 0;
@@ -223,7 +228,9 @@ function calculateLeftRightDrift(arr, col, row)
   console.log(leftAvg + " " + rightAvg);
   return leftAvg > rightAvg ? -1 : 1;
 }
-function findLowerBlocks(arr, col, row) //find avg height
+
+//finds the average height of the block arr[col][row] and the eight blocks surround the block
+function findAvgHeight(arr, col, row) 
 {
   let count = 0;
   let sum = 0;
@@ -233,28 +240,19 @@ function findLowerBlocks(arr, col, row) //find avg height
     {
 
       if(col< arr.length && col>= 0
-        && row < arr[0].length && row >= 0
-        /*&& arr[col + i][row + j] < arr[col][row]*/)
+        && row < arr[0].length && row >= 0)
       {
-        //console.log(col + " " + row + " " + i + " " + j);
         sum += arr[col][row];
         count++;
       }
     }
   }
-  return count == 0 ? 0 : sum / count; //average
-  /*
-  if(lowerBlocksCol.length == 0)
-  {
-    return [col, row];
-  }
-  let randBlock = floor(random(0, lowerBlocksCol.length));
-  console.log(randBlock + "lowerBlocksCol[randBlock]: " + lowerBlocksCol[randBlock] + " lowerBlocksRow[randBlock]: " + lowerBlocksRow[randBlock]);
-  return [lowerBlocksCol[randBlock], lowerBlocksRow[randBlock]]
-  */
+  //if there is no block to measure, then return 0 and avoid a divide by 0 error
+  return count == 0 ? 0 : sum / count;
 }
 {
 
+//resizes window if you adjust it
 }
 function windowResized()
 {

@@ -18,6 +18,7 @@ function setup() {
   noStroke();
   ortho(width / 6, -width / 6, -height / 6, height / 6, 0.00001, 10000);
   boat = loadModel('boat.obj');
+  moon = loadModel('moon.obj');
 }
 
 function draw() {
@@ -43,6 +44,27 @@ function draw() {
   }
   rotateX(-45);
   rotateY(45);
+
+  //sun
+  push();
+  emissiveMaterial(255, 100, 0);
+  translate(0, -275, 0);
+  translate(0, 275, 0);
+  rotateZ(sunsetChange);
+  translate(0, -275 ,0);
+  box(50);
+  pop();
+
+  //moon
+  push();
+  emissiveMaterial(255, 255, 255);
+  translate(0, 310, 0);
+  translate(0, -310, 0);
+  rotateZ(sunsetChange);
+  translate(0, 310 ,0);
+  rotateZ(90);
+  model(moon);
+  pop();
 
   //create giant box below the moving rectangles
   push();

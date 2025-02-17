@@ -139,7 +139,7 @@ function draw() {
       //turns on a light for the boat when it gets darker
       if(sunsetChange >= 70)
       {
-        pointLight(105 + sunsetChange, 105 + sunsetChange, 105 + sunsetChange, ballX, sizes[floor(ballX)][floor(ballY)] - 10, ballY);
+        pointLight(105 + sunsetChange, 105 + sunsetChange, 105 + sunsetChange, floor(ballX), sizes[floor(ballX)][floor(ballY)] - 10, floor(ballY));
       }
       translate(ballX * size - (size * rows/2) + ballXOffset, startHeight - cols - size + heightIncrement, ballY * size - (size * cols/2) + ballYOffset);
     }
@@ -154,7 +154,7 @@ function draw() {
       //turns on a light for the boat when it gets darker
       if(sunsetChange >= 70)
       {
-        pointLight(105 + sunsetChange, 105 + sunsetChange, 105 + sunsetChange, ballX, avgHeight, ballY);
+        pointLight(105 + sunsetChange, 105 + sunsetChange, 105 + sunsetChange, floor(ballX), avgHeight, floor(ballY));
       }
 
       //if you look closely, it's the same command as the if statement, except the 2nd parameter is adapted to just fall
